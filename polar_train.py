@@ -79,7 +79,7 @@ if __name__ == '__main__':
         lamb = 1
         optimizer = torch.optim.SGD(net.parameters(), lr=lr)
 
-        loss, acc = loss_fn(net, X_train_scatter, Y_train, lamb)
+        loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
         print('-'*40)
         print(loss, acc)
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                    X_train_scatter, Y_train, X_test_scatter, Y_test,
                    device, S, num_epochs = 5)
 
-        loss, acc = loss_fn(net, X_train_scatter, Y_train, lamb)
+        loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
         print('-'*40)
         print(loss, acc)
