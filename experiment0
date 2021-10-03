@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH –job-name=polar_train
+#SBATCH -P a100
+#SBATCH -N 1
+#SBATCH –ntasks-per-node=48
+#SBATCH --gres=gpu:1
+#SBATCH -A tboen1_gpu    ###   this flag is required
+#SBATCH –export=ALL
+
+source ./polarenv/bin/activate
+python polar_train.py
+
