@@ -2,7 +2,7 @@
 #SBATCH --job-name=polartrain
 #SBATCH -P a100
 #SBATCH -N 1
-#SBATCH --ntasks-per-node=12   (note this is dash dashnstaks)
+#SBATCH --ntasks-per-node=12   
 #SBATCH --gres=gpu:1
 #SBATCH -A rvidal1-semantic_gpu ### this flag is required
 #SBATCH -export=ALL
