@@ -53,7 +53,7 @@ if __name__ == '__main__':
     for r in range(start_neuron, max_neuron):
         
         if r == start_neuron:
-            net = Net(3,r,c=10,d=d_prime)
+            net = Net(3,r,c=10,d=d_prime).to(device)
         else:
             w, polar, z = get_w(precomputed, X_train_scatter, Y_train, net, lamb, c = 10, exact = True, R = None)
             #w, polar, _ = get_w(sketch_compute, X_train_scatter, Y_train, net, lamb, c = 10, exact = False, R = R)
