@@ -18,8 +18,7 @@ from naive_utils import *
 if __name__ == '__main__':
     print('STARTING JOB')
     
-    print('fixing seed = 0 for reproducibility')
-    print('running sanity check 5 epochs, using SGD, lamb 1')
+    print('running job 200 epochs, using SGD, lamb 1')
     
     torch.manual_seed(0)
 
@@ -91,7 +90,7 @@ if __name__ == '__main__':
         data = train_model(net, loss_fn, optimizer, lamb, 
                    train_loader, test_loader, 
                    X_train_scatter, Y_train, X_test_scatter, Y_test,
-                   device, S, num_epochs = 5)
+                   device, S, num_epochs = 200)
 
         loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
