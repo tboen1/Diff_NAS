@@ -346,7 +346,10 @@ def get_w(precomputed, X, Y, net, lamb, c = 10, exact = True, R = None):
     
     return w, polar, z_star
     
-def closed_form_tau(X, Y, net, lamb, w):
+def closed_form_tau(X, Y, net, lamb, w, device):
+
+    for i in range(len(w)):
+        w[i] = w[i].to(device)
     
     with torch.no_grad():
         W_pred = net(X)
