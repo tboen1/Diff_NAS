@@ -19,7 +19,7 @@ if __name__ == '__main__':
     print('STARTING JOB')
     
     print('fixing seed = 0 for reproducibility')
-    print('running sanity check 5 epochs, using ADAM, lamb 1')
+    print('running sanity check 5 epochs, using SGD, lamb 1')
     
     torch.manual_seed(0)
 
@@ -38,9 +38,9 @@ if __name__ == '__main__':
     Y_train = convert_label(Y_train)
     Y_test = convert_label(Y_test)
     
-    precomputed = pre_compute(X_train_scatter)    
+    precomputed = pre_compute(X_train_scatter).to(device)    
     
-    #sketch_compute, R = pre_compute_sketch(X_train_scatter, max_size=1000)
+    #sketch_compute, R = pre_compute_sketch(X_train_scatter, max_size=1000).to(device)  
     
     d_prime = X_train_scatter.shape[0]
     
@@ -55,12 +55,11 @@ if __name__ == '__main__':
         if r == start_neuron:
             net = Net(3,r,c=10,d=d_prime).to(device)
         else:
-            w, polar, z = get_w(precomputed, X_train_scatter, Y_train, net, lamb, c = 10, exact = True, R = None)
+            w, polar, z = get_w(precomputed, X_train_scatter.to(device), Y_train.to(device), net, lamb, c = 10, exact = True, R = None)
             #w, polar, _ = get_w(sketch_compute, X_train_scatter, Y_train, net, lamb, c = 10, exact = False, R = R)
-            tau4 = closed_form_tau(X_train_scatter, Y_train, net, lamb, w)
+            tau4 = closed_form_tau(X_train_scatter.to(device), Y_train.to(device), net, lamb, w, device)
             
             full_data['{}'.format(r)] = {'model': net.state_dict(), 'optimizer': optimizer.state_dict()}
-
             
             print('R: {}, POLAR: {:.4f}, TAU^4: {:.4f}'.format(r, polar, tau4))
             
@@ -68,7 +67,10 @@ if __name__ == '__main__':
             net = net.to(device)
             
             W = [] 
-            for i in range(len(net.layers)): W.append(net.layers[i].weight.data.numpy())
+            if device == 'cpu':
+                for i in range(len(net.layers)): W.append(net.layers[i].weight.data.numpy())
+            else:
+                for i in range(len(net.layers)): W.append(net.layers[i].weight.data.cpu().numpy())
             
             full_data['{}'.format(r)] = {}
             full_data['{}'.format(r)]['training'] = data
