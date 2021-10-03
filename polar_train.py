@@ -65,6 +65,7 @@ if __name__ == '__main__':
             print('R: {}, POLAR: {:.4f}, TAU^4: {:.4f}'.format(r, polar, tau4))
             
             net = update_weights(net, tau4, w)
+            net = net.to(device)
             
             W = [] 
             for i in range(len(net.layers)): W.append(net.layers[i].weight.data.numpy())
