@@ -1,13 +1,12 @@
 #!/bin/bash
-#SBATCH –job-name=polartrain
+#SBATCH --job-name=polartrain
 #SBATCH -P a100
 #SBATCH -N 1
-#SBATCH -ntasks-per-node=48
+#SBATCH --ntasks-per-node=12   (note this is dash dashnstaks)
 #SBATCH --gres=gpu:1
-#SBATCH -A tboen1_gpu    ###   this flag is required
+#SBATCH -A rvidal1-semantic_gpu ### this flag is required
 #SBATCH -export=ALL
-
+source  /data/apps/go.sh
 cd /home/tboen1/data_rvidal1/tboen1/polar/Diff_NAS
-source ./polarenv/bin/activate
-python polar_train.py
-
+source ./polarenv/bin/a
+python3 polar_train.py  
