@@ -1,4 +1,3 @@
-
 import torch
 import torchvision.datasets as datasets 
 import torchvision.transforms as transforms
@@ -21,6 +20,18 @@ def get_dataloaders(dataset, train_size = None, test_size = None, minibatch_size
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,)),])
         data_trainset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
         data_testset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+        
+    if dataset == 'CIFAR10':
+        if train_size is None:
+            train_size = 50000
+        if test_size is None:
+            test_size = 10000
+        if minibatch_size is None:
+            minibatch_size = 32
+        
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        data_trainset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+        data_testset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
 
     
     train_subset = torch.utils.data.Subset(data_trainset, range(0,train_size))
@@ -38,20 +49,6 @@ def get_dataloaders(dataset, train_size = None, test_size = None, minibatch_size
         return train_loader, test_loader, X_train, Y_train, X_test, Y_test
     else:
         return train_loader, test_loader
-    
-
-def convert_image(image_tensor, d = 784):
-    '''vectorizes batch of images into [batch, d]'''
-    
-    size = image_tensor.shape[0]
-    return torch.transpose(image_tensor.squeeze().flatten().reshape(size, d),0,1)
-
-def convert_label(label_tensor, c = 10):
-    '''1 hot encodes label into tensor c x N'''
-    
-    label_tensor = torch.nn.functional.one_hot(label_tensor, num_classes=c) 
-    label_tensor[label_tensor == 0] = -1
-    return torch.transpose(label_tensor,0,1).type(torch.float32)
     
 class Net(nn.Module):
     '''generalized FNN. Tunable number of hidden layers and width'''
@@ -140,29 +137,10 @@ def output(epoch, batch_index, num_batches, batch_loss, batch_acc, train_loss, t
                         batch_loss, batch_acc, 
                         train_loss, train_acc, 
                         test_loss, test_acc)) 
-
-def get_scattering_transform(J=2,L=8, device='cpu'):
-    '''current implementation of J/L maps d = 28 x 28 --> d_prime = 3969'''
-
-    S = Scattering2D(J=J, shape = (28,28), L=L, max_order=2)
-    
-    if device == 'cuda':
-        S.cuda()
-        
-    return S
-        
-def scatter_transform_tensor(S, tensor, device='cpu'):
-    '''
-    tensor_dim = [batch, channels, height, width]
-    transform_dim = [batch, d_prime]
-    '''
-    Sx = S.forward(tensor.to(device))
-    scatter = torch.transpose(Sx.reshape([tensor.shape[0],Sx.shape[1]*Sx.shape[2]*Sx.shape[3]*Sx.shape[4]]),0,1)
-    return scatter
     
 def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader, 
                         X_train_full, Y_train_full, X_test_full, Y_test_full, 
-                        device, S):
+                        device, S, num_epochs=30):
 
     train_step = make_train_step(net, loss_fn, optimizer, lamb)
     
@@ -173,7 +151,7 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
     test_loss_full = []
     test_acc_full = []
     
-    for epoch in range(20):
+    for epoch in range(num_epochs):
           for batch_idx, (X_batch, Y_batch) in enumerate(train_loader):
               
               Y = convert_label(Y_batch).to(device)
@@ -213,25 +191,80 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
                          
     return data 
     
+def d_prime_simulator(J, L, shape):
+    C, N_1, N_2 = shape
+    d_prime = C*(1 + L*J + 0.5*J*(J-1)*L**2)*(N_1/(2**J))*(N_2/(2**J))
+    return d_prime
+    
+def get_scattering_transform(J=2,L=8, shape = (28,28), device='cpu'):
+    '''current implementation of J/L maps d = 28 x 28 --> d_prime = 3969'''
+
+    S = Scattering2D(J=J, shape = shape, L=L, max_order=2)
+    
+    if device == 'cuda':
+        S.cuda()
+        
+    return S
+        
+def scatter_transform_tensor(S, tensor, device='cpu'):
+    '''
+    tensor_dim = [batch, channels, height, width]
+    transform_dim = [batch, d_prime]
+    '''
+    Sx = S.forward(tensor.to(device))
+    scatter = torch.transpose(Sx.reshape([tensor.shape[0],Sx.shape[1]*Sx.shape[2]*Sx.shape[3]*Sx.shape[4]]),0,1)
+    return scatter
+    
+def convert_image(image_tensor, d = 784):
+    '''vectorizes batch of images into [batch, d]'''
+    
+    size = image_tensor.shape[0]
+    return torch.transpose(image_tensor.squeeze().flatten().reshape(size, d),0,1)
+
+def convert_label(label_tensor, c = 10):
+    '''1 hot encodes label into tensor c x N'''
+    
+    label_tensor = torch.nn.functional.one_hot(label_tensor, num_classes=c) 
+    label_tensor[label_tensor == 0] = -1
+    return torch.transpose(label_tensor,0,1).type(torch.float32)
+    
 ####################################  Polar update code  ####################################  
 def pre_compute(X):
-    return torch.pinverse(X@torch.transpose(X,0,1))@X
+    X = X.type(torch.float64)
+    return torch.pinverse(X.T)
 
-def get_w(precomputed, X, Y, net, lamb, c = 10):
-    Q = (1/lamb)*(Y - net(X)) #calculates gradient
-  
-    norm = torch.zeros((c,2))
-    norm[:,0] = torch.norm(F.relu(-Q), dim = 1, p = 'fro')
-    norm[:,1] = torch.norm(F.relu(Q), dim = 1, p = 'fro')
+def pre_compute_sketch(X, max_size):
+    p = max_size 
+    N = X.shape[1]
 
-    index = torch.argmax(norm, keepdim=True)
-    polar = norm.flatten()[index]
+    X = X.type(torch.float64)
+    R = torch.normal(0,1/p,(p,N)).type(torch.float64)
+    B = R@X.T
+
+    return torch.pinverse(B), R
+
+def get_polar(X, Y, net, lamb, verbose = False):
+    with torch.no_grad():
+        Q = (1/lamb)*(Y - net(X)) #calculates gradient
+
+        norm = torch.zeros((Q.shape[0],2))
+        norm[:,0] = torch.norm(F.relu(-Q), dim = 1, p = 'fro')
+        norm[:,1] = torch.norm(F.relu(Q), dim = 1, p = 'fro')
     
-    col = int(index%2)
-    row = int((index - col)/2)
-    
-    u_star = torch.zeros([c,1])
-    
+        index = torch.argmax(norm, keepdim=True)
+        polar = norm.flatten()[index]
+
+        col = int(index%2)
+        row = int((index - col)/2)
+
+    if verbose:
+        return polar, row, col, Q
+    else:
+        return polar
+
+def get_z_u(polar, row, col, Q):
+    u_star = torch.zeros([Q.shape[0],1])
+        
     if col == 1: #implies that \|Q_+\|_F > \|Q_-\|_F
         u_star[row] = 1
         z_star = (F.relu(Q[row,:])/polar).unsqueeze(0)
@@ -239,27 +272,92 @@ def get_w(precomputed, X, Y, net, lamb, c = 10):
     if col == 0: #implies that \|Q_-\|_F > \|Q_+\|_F
         u_star[row] = -1
         z_star = (F.relu(-Q[row,:])/polar).unsqueeze(0)
+
+    return z_star, u_star
+
+def check_optimality(v_hat, polar, Q, row, X):
+    z_hat = v_hat.T@X
+    z_hat = z_hat/torch.norm(F.relu(z_hat),2)
+
+    Q_i = Q[row,:]
+
+    polar_hat = torch.norm(Q_i@z_hat.T, p='fro')
+
+    return polar_hat, polar
+
+def sketching_solution(z, R, sketch_compute):
+    z = z.type(torch.float64)
+    c = R@z.T
+
+    v = sketch_compute@c 
+
+    return v.type(torch.float32)
+
+def exact_solution(z, precomputed):
+    z = z.type(torch.float64)
+    v = precomputed@torch.transpose(z,0,1)
+
+    return v.type(torch.float32)
+
+def get_v_optimal(precomputed, X, Y, net, lamb):
+
+    polar, row, col, Q = get_polar(X, Y, net, lamb, verbose = True)
+    z_star, u_star = get_z_u(polar, row, col, Q)
+
+def get_w(precomputed, X, Y, net, lamb, c = 10, exact = True, R = None):
+    with torch.no_grad():
+        Q = (1/lamb)*(Y - net(X)) #calculates gradient
+      
+        norm = torch.zeros((c,2))
+        norm[:,0] = torch.norm(F.relu(-Q), dim = 1, p = 'fro')
+        norm[:,1] = torch.norm(F.relu(Q), dim = 1, p = 'fro')
     
-    w1 = precomputed@torch.transpose(z_star,0,1)
-    w1 = w1/torch.norm(F.relu(torch.transpose(w1,0,1)@X),2) 
+        index = torch.argmax(norm, keepdim=True)
+        polar = norm.flatten()[index]
+        
+        col = int(index%2)
+        row = int((index - col)/2)
+        
+        u_star = torch.zeros([c,1])
+        
+        if col == 1: #implies that \|Q_+\|_F > \|Q_-\|_F
+            u_star[row] = 1
+            z_star = (F.relu(Q[row,:])/polar).unsqueeze(0)
+        
+        if col == 0: #implies that \|Q_-\|_F > \|Q_+\|_F
+            u_star[row] = -1
+            z_star = (F.relu(-Q[row,:])/polar).unsqueeze(0)
+
+        if exact:
+            w1 = exact_solution(z_star, precomputed)
+            w1 = w1/torch.norm(F.relu(torch.transpose(w1,0,1)@X),2) 
+
+        else:
+            w1 = sketching_solution(z_star, R, precomputed)
+            w1 = w1/torch.norm(F.relu(torch.transpose(w1,0,1)@X),2)
+        
+        polar_hat, polar = check_optimality(w1, polar, Q, row, X)
+
+        print(polar_hat.item(), polar.item(), polar_hat.item()/polar.item())
+
+        w = [w1]
+        for i in range(net.num_hidden_layers): w.append(torch.ones([1,1]))
+        w.append(u_star)
     
-    w = [w1]
-    for i in range(net.num_hidden_layers): w.append(torch.ones([1,1]))
-    w.append(u_star)
-    
-    return w, polar.detach().item()
+    return w, polar, z_star
     
 def closed_form_tau(X, Y, net, lamb, w):
-
-    W_pred = net(X)
-    reg = lamb*torch.norm(F.relu(torch.transpose(w[0],0,1)@X),2)
-    w_pred = w[-1]@F.relu(torch.transpose(w[0],0,1)@X)
-    #w_pred = w[-1]@F.relu(w[3]@F.relu(w[2]@F.relu(w[1]@(F.relu(torch.transpose(w[0],0,1)@X)))))
-
-    top = torch.trace(w_pred@torch.transpose(Y,0,1)) - torch.trace(w_pred@torch.transpose(W_pred,0,1)) - reg
-    bottom = torch.trace(w_pred@torch.transpose(w_pred,0,1))
-
-    tau4 = top/bottom
+    
+    with torch.no_grad():
+        W_pred = net(X)
+        reg = lamb*torch.norm(F.relu(torch.transpose(w[0],0,1)@X),2)
+        w_pred = w[-1]@F.relu(torch.transpose(w[0],0,1)@X)
+        #w_pred = w[-1]@F.relu(w[3]@F.relu(w[2]@F.relu(w[1]@(F.relu(torch.transpose(w[0],0,1)@X)))))
+    
+        top = torch.trace(w_pred@torch.transpose(Y,0,1)) - torch.trace(w_pred@torch.transpose(W_pred,0,1)) - reg
+        bottom = torch.trace(w_pred@torch.transpose(w_pred,0,1))
+    
+        tau4 = top/bottom
 
     return tau4
     
