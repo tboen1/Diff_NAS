@@ -92,7 +92,6 @@ def loss_fn(net, X, Y, lamb):
 
     #pred term
     pred = net(X)
-    pred = pred.to(device)
     pred_loss = 0.5*torch.norm(Y - pred, 'fro')**2
     acc = get_acc(pred, Y)
 
