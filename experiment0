@@ -1,5 +1,4 @@
 #!/bin/bash
-#SBATCH –job-name=my-bigmem-job
 #SBATCH --P a100
 #SBATCH --N 1
 #SBATCH –-ntasks-per-node=48
