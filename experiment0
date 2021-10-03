@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH –job-name=polar-train
+#SBATCH –job-name=polartrain
 #SBATCH -P a100
 #SBATCH -N 1
 #SBATCH –ntasks-per-node=48
