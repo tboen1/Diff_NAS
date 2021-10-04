@@ -49,6 +49,8 @@ if __name__ == '__main__':
     start_neuron = 100
     max_neuron = 105
     
+    lr = 1e-4
+    
     for r in range(start_neuron, max_neuron):
         
         if r == start_neuron:
@@ -76,7 +78,7 @@ if __name__ == '__main__':
             full_data['{}'.format(r)]['metrics'] = {'polar': polar.item(), 'tau4': tau4.detach().item()}
             full_data['{}'.format(r)]['weights'] = W
         
-        lr = 1e-4
+        lr = lr*0.1
         lamb = 1
         optimizer = torch.optim.SGD(net.parameters(), lr=lr)
 
