@@ -79,7 +79,7 @@ if __name__ == '__main__':
             full_data['{}'.format(r)]['weights'] = W
         
         lr = lr*0.1
-        lamb = 1
+        lamb = 1e-3
         optimizer = torch.optim.SGD(net.parameters(), lr=lr)
 
         loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         data = train_model(net, loss_fn, optimizer, lamb, 
                    train_loader, test_loader, 
                    X_train_scatter, Y_train, X_test_scatter, Y_test,
-                   device, S, num_epochs = 200)
+                   device, S, num_epochs = 400)
 
         loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
