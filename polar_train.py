@@ -49,7 +49,7 @@ if __name__ == '__main__':
     start_neuron = 100
     max_neuron = 101
     
-    lr = 1e-4
+    lr = 1e-3
     
     for r in range(start_neuron, max_neuron):
         
