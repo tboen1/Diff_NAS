@@ -173,7 +173,7 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
                   train_acc_full.append(train_acc)
                 
                   polar = get_polar(X, Y, net, lamb, verbose = False)
-                  polar = polar[0][0].item()
+                  polar = polar.item()
                   polar_vals.append(polar)
     
                   Y = Y_test_full.to(device)
