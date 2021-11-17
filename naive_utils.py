@@ -83,11 +83,11 @@ def loss_fn(net, X, Y, lamb):
 
     #reg term
     var_n = torch.norm(net.layers[hidden+1].weight, p=1, dim=0).unsqueeze(0)
-    var_0 = torch.norm(net.layers[0].weight@X, p=2, dim=1).unsqueeze(1)
-    total = var_n
+    var_0 = torch.norm(F.relu(net.layers[0].weight@X), p=2, dim=1).unsqueeze(1)
+    total = var_0
     for i in range(hidden):
-        total = total@abs(net.layers[i+1].weight)
-    total = total@var_0
+        total = abs(net.layers[i+1].weight)@total
+    total = var_n@total
     reg = torch.sum(total.flatten(0))
 
     #pred term
