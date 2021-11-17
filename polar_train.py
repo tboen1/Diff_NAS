@@ -18,7 +18,7 @@ from naive_utils import *
 if __name__ == '__main__':
     print('STARTING JOB')
     
-    print('running job 200 epochs, using SGD, lamb 1')
+    print('running job 400 epochs, using SGD, lamb 1e-3')
     
     torch.manual_seed(0)
 
