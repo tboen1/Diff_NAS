@@ -131,12 +131,13 @@ def make_train_step(net, loss_fn, optimizer, lamb):
         return loss.detach().item(), acc
     return train_step
 
-def output(epoch, batch_index, num_batches, batch_loss, batch_acc, train_loss, train_acc, test_loss, test_acc):
-    str = 'epoch: {}, {}/{}, | BATCH loss: {:.3f}, acc {:.3f} | TRAIN loss: {:.3f}, acc {:.3f} | TEST loss: {:.3f}, acc {:.3f}'
+def output(epoch, batch_index, num_batches, batch_loss, batch_acc, train_loss, train_acc, test_loss, test_acc, polar):
+    str = 'epoch: {}, {}/{}, | BATCH loss: {:.3f}, acc {:.3f} | TRAIN loss: {:.3f}, acc {:.3f} | TEST loss: {:.3f}, acc {:.3f} | polar: {:.3f}'
     print(str.format(epoch, batch_index, num_batches,
                         batch_loss, batch_acc, 
                         train_loss, train_acc, 
-                        test_loss, test_acc)) 
+                        test_loss, test_acc, 
+                        polar)) 
     
 def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader, 
                         X_train_full, Y_train_full, X_test_full, Y_test_full, 
@@ -150,6 +151,7 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
     train_acc_full = []
     test_loss_full = []
     test_acc_full = []
+    polar_vals = []
     
     for epoch in range(num_epochs):
           for batch_idx, (X_batch, Y_batch) in enumerate(train_loader):
@@ -169,6 +171,10 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
                   train_loss, train_acc = train_step(X, Y, 'eval')
                   train_loss_full.append(train_loss)
                   train_acc_full.append(train_acc)
+                
+                  polar = get_polar(X, Y, net, lamb, verbose = False)
+                  polar = polar[0][0].item()
+                  polar_vals.append(polar)
     
                   Y = Y_test_full.to(device)
                   X = X_test_full.to(device) 
@@ -176,10 +182,11 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
                   test_loss, test_acc = train_step(X, Y, 'eval')  
                   test_loss_full.append(test_loss)
                   test_acc_full.append(test_acc)  
+                
             
               if  batch_idx % 25 == 0:
                   output(epoch, batch_idx, len(train_loader), batch_loss, batch_acc, 
-                         train_loss, train_acc, test_loss, test_acc) 
+                         train_loss, train_acc, test_loss, test_acc, polar) 
     
     data = {}
     data['batch_loss'] = np.asarray(batch_loss_full)
@@ -188,6 +195,7 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
     data['train_acc'] = np.asarray(train_acc_full)
     data['test_loss'] = np.asarray(test_loss_full)
     data['test_acc'] = np.asarray(test_acc_full)
+    data['polar'] = np.asarray(polar_vals)
                          
     return data 
     
