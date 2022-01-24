@@ -102,8 +102,12 @@ def loss_fn(net, X, Y, lamb):
 def get_acc(y_pred, Y):
     '''calculates accuracy'''
     
-    y_pred[y_pred<=0]=-1
-    y_pred[y_pred>0]=1
+    #replace this with argmaxing the entire array
+    y_pred = F.one_hot(torch.argmax(y_pred, dim=0), num_classes=10).T
+    y_pred[y_pred <= 0] = -1
+
+    #y_pred[y_pred<=0]=-1
+    #y_pred[y_pred>0]=1
     
     scores = Y - y_pred
     scores_sum = torch.sum(abs(scores), dim=0)
