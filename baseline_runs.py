@@ -26,7 +26,7 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     train_loader, test_loader, X_train, Y_train, X_test, Y_test = get_dataloaders("MNIST", train_size = 2000,
-                                                                              test_size = 1000,
+                                                                              test_size = 2000,
                                                                               minibatch_size = 32,
                                                                               get_full_datasets = True)
                                                                               
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
         print(r)
 
-        net = Net(1,r,c=10,d=d_prime)
+        net = Net(1,r,c=10,d=d_prime).to(device)
         optimizer = torch.optim.Adam(net.parameters(), lr=1e-3)
 
         data = train_model(net, loss_fn, optimizer, lamb, 
