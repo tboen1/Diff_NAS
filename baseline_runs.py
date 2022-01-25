@@ -53,7 +53,7 @@ if __name__ == '__main__':
         data = train_model(net, loss_fn, optimizer, lamb, 
                    train_loader, test_loader, 
                    X_train_scatter, Y_train, X_test_scatter, Y_test,
-                   device, S, num_epochs=10)
+                   device, S, num_epochs=200)
 
         full_data[r] = data
 
