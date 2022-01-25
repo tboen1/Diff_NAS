@@ -2,6 +2,7 @@
 #SBATCH --job-name=polartrain
 #SBATCH -p a100
 #SBATCH -N 1
+#SBATCH --time=3:0:0
 #SBATCH --ntasks-per-node=12   
 #SBATCH --gres=gpu:1
 #SBATCH -A rvidal1-semantic_gpu ### this flag is required
