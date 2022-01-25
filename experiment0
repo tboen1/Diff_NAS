@@ -9,4 +9,4 @@
 source  /data/apps/go.sh
 cd /home/tboen1/data_rvidal1/tboen1/polar/Diff_NAS
 source ./polarenv/bin/a
-python3 polar_train.py
+python3 baseline_runs.py
