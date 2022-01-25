@@ -20,8 +20,8 @@ if __name__ == '__main__':
     
     print('running job 200 epochs, using ADAM, lamb 1e-3')
 
-    lamb = 1e-3
-    f_name = 'baseline'
+    lamb = 1e-1
+    f_name = 'baseline1'
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
