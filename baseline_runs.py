@@ -18,7 +18,7 @@ from naive_utils import *
 if __name__ == '__main__':
     print('STARTING JOB')
     
-    print('running job 200 epochs, using ADAM, lamb 1e-3')
+    print('running job 200 epochs, using ADAM, lamb 1e-1')
 
     lamb = 1e-1
     f_name = 'baseline1'
