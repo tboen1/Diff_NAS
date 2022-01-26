@@ -7,3 +7,6 @@ baseline_results0.pk
 - lambda value 1e-3
 - hidden layer size varying between 4, 8, 16, 32, 64, 128, 256, 512, 1024
 - 200 epochs. 
+
+baseline_results1.pk
+- same as baseline_results0.pk, except lambda value is now 1e-3
