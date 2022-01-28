@@ -18,14 +18,12 @@ from naive_utils import *
 if __name__ == '__main__':
     print('STARTING JOB')
     
-    print('running job 200 epochs, using SGD, lamb 1e-3')
+    print('running sanity check 5 epochs, using Adam, lamb 1e-3')
     
-    torch.manual_seed(0)
-
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     train_loader, test_loader, X_train, Y_train, X_test, Y_test = get_dataloaders("MNIST", train_size = 2000,
-                                                                              test_size = 1000,
+                                                                              test_size = 2000,
                                                                               minibatch_size = 32,
                                                                               get_full_datasets = True)
                                                                               
@@ -46,10 +44,8 @@ if __name__ == '__main__':
     full_data = {}
     model_data = {}
 
-    start_neuron = 100
-    max_neuron = 101
-    
-    lr = 1e-3
+    start_neuron = 20
+    max_neuron = 100
     
     for r in range(start_neuron, max_neuron):
         
@@ -60,9 +56,9 @@ if __name__ == '__main__':
             #w, polar, _ = get_w(sketch_compute, X_train_scatter, Y_train, net, lamb, c = 10, exact = False, R = R)
             tau4 = closed_form_tau(X_train_scatter.to(device), Y_train.to(device), net, lamb, w, device)
             
-            full_data['{}'.format(r)] = {'model': net.state_dict(), 'optimizer': optimizer.state_dict()}
+            #full_data['{}'.format(r)] = {'model': net.state_dict(), 'optimizer': optimizer.state_dict()}
             
-            print('R: {}, POLAR: {:.4f}, TAU^4: {:.4f}'.format(r, polar, tau4))
+            print('R: {}, POLAR: {:.4f}, TAU^4: {:.4f}'.format(r, polar.item(), tau4.item()))
             
             net = update_weights(net, tau4, w)
             net = net.to(device)
@@ -77,10 +73,13 @@ if __name__ == '__main__':
             full_data['{}'.format(r)]['training'] = data
             full_data['{}'.format(r)]['metrics'] = {'polar': polar.item(), 'tau4': tau4.detach().item()}
             full_data['{}'.format(r)]['weights'] = W
+
+            if polar.item() <= 1.1:
+                break
         
-        lr = lr*0.1
+        lr = 1e-3
         lamb = 1e-3
-        optimizer = torch.optim.SGD(net.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 
         loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
@@ -92,7 +91,7 @@ if __name__ == '__main__':
         data = train_model(net, loss_fn, optimizer, lamb, 
                    train_loader, test_loader, 
                    X_train_scatter, Y_train, X_test_scatter, Y_test,
-                   device, S, num_epochs = 200)
+                   device, S, num_epochs = 5)
 
         loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
@@ -102,7 +101,7 @@ if __name__ == '__main__':
         print('')
 
 
-    f_name = 'polar_scatter_true'.format(r)
+    f_name = 'polar_'.format(start_neuron)
 
     pk.dump(full_data, open('results/{}_data.pk'.format(f_name), 'wb'))
     #torch.save(model_data, open('results/{}_model.pth'.format(f_name), 'wb'))
