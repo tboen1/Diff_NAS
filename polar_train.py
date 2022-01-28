@@ -101,7 +101,7 @@ if __name__ == '__main__':
         print('')
 
 
-    f_name = 'polar_'.format(start_neuron)
+    f_name = 'polar_{}'.format(start_neuron)
 
     pk.dump(full_data, open('results/{}_data.pk'.format(f_name), 'wb'))
     #torch.save(model_data, open('results/{}_model.pth'.format(f_name), 'wb'))
