@@ -18,7 +18,7 @@ from naive_utils import *
 if __name__ == '__main__':
     print('STARTING JOB')
     
-    print('running sanity check 5 epochs, using Adam, lamb 1e-3')
+    print('running polar 200 epochs, using Adam, lamb 1e-3')
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         data = train_model(net, loss_fn, optimizer, lamb, 
                    train_loader, test_loader, 
                    X_train_scatter, Y_train, X_test_scatter, Y_test,
-                   device, S, num_epochs = 5)
+                   device, S, num_epochs = 200)
 
         loss, acc = loss_fn(net, X_train_scatter.to(device), Y_train.to(device), lamb)
         print('')
