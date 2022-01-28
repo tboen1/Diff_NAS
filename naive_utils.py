@@ -83,11 +83,11 @@ def loss_fn(net, X, Y, lamb):
 
     #reg term
     var_n = torch.norm(net.layers[hidden+1].weight, p=1, dim=0).unsqueeze(0)
-    var_0 = torch.norm(F.relu(net.layers[0].weight@X), p=2, dim=1).unsqueeze(1)
-    total = var_0
+    var_0 = torch.norm(net.layers[0].weight@X, p=2, dim=1).unsqueeze(1)
+    total = var_n
     for i in range(hidden):
-        total = abs(net.layers[i+1].weight)@total
-    total = var_n@total
+        total = total@abs(net.layers[i+1].weight)
+    total = total@var_0
     reg = torch.sum(total.flatten(0))
 
     #pred term
@@ -101,11 +101,10 @@ def loss_fn(net, X, Y, lamb):
 
 def get_acc(y_pred, Y):
     '''calculates accuracy'''
-    
-    #replace this with argmaxing the entire array
+
     y_pred = F.one_hot(torch.argmax(y_pred, dim=0), num_classes=10).T
     y_pred[y_pred <= 0] = -1
-
+    
     #y_pred[y_pred<=0]=-1
     #y_pred[y_pred>0]=1
     
@@ -118,22 +117,21 @@ def get_acc(y_pred, Y):
 
     return acc.detach().item()
     
-def make_train_step(net, loss_fn, optimizer, lamb):
-    def train_step(X, Y, mode):
-        if mode == 'train':
-          net.train()
+def train_step(net, optimizer, lamb, X, Y, mode):
+    if mode == 'train':
+      net.train()
 
-          loss, acc = loss_fn(net, X, Y, lamb)
-          loss.backward()
-          optimizer.step()
-          optimizer.zero_grad()
+      loss, acc = loss_fn(net, X, Y, lamb)
+      loss.backward()
+      optimizer.step()
+      optimizer.zero_grad()
 
-        if mode == 'eval':
-          net.eval()
-          loss, acc = loss_fn(net, X, Y, lamb)
-        
-        return loss.detach().item(), acc
-    return train_step
+    if mode == 'eval':
+      net.eval()
+      loss, acc = loss_fn(net, X, Y, lamb)
+    
+    return loss.detach().item(), acc
+
 
 def output(epoch, batch_index, num_batches, batch_loss, batch_acc, train_loss, train_acc, test_loss, test_acc, polar):
     str = 'epoch: {}, {}/{}, | BATCH loss: {:.3f}, acc {:.3f} | TRAIN loss: {:.3f}, acc {:.3f} | TEST loss: {:.3f}, acc {:.3f} | polar: {:.3f}'
@@ -201,7 +199,7 @@ def train_model(net, loss_fn, optimizer, lamb, train_loader, test_loader,
     data['test_acc'] = np.asarray(test_acc_full)
     data['polar'] = np.asarray(polar_vals)
                          
-    return data 
+    return data  
     
 def d_prime_simulator(J, L, shape):
     C, N_1, N_2 = shape
@@ -307,7 +305,7 @@ def sketching_solution(z, R, sketch_compute):
 
 def exact_solution(z, precomputed):
     z = z.type(torch.float64)
-    v = precomputed@torch.transpose(z,0,1)
+    v = precomputed@z.T
 
     return v.type(torch.float32)
 
@@ -334,11 +332,13 @@ def get_w(precomputed, X, Y, net, lamb, c = 10, exact = True, R = None):
         
         if col == 1: #implies that \|Q_+\|_F > \|Q_-\|_F
             u_star[row] = 1
-            z_star = (F.relu(Q[row,:])/polar).unsqueeze(0)
+            z_star = (F.relu(Q[row,:])/polar)
+            #z_star = (F.relu(Q[row,:])/polar).unsqueeze(0)
         
         if col == 0: #implies that \|Q_-\|_F > \|Q_+\|_F
             u_star[row] = -1
-            z_star = (F.relu(-Q[row,:])/polar).unsqueeze(0)
+            z_star = (F.relu(-Q[row,:])/polar)
+            #z_star = (F.relu(-Q[row,:])/polar).unsqueeze(0)
 
         if exact:
             w1 = exact_solution(z_star, precomputed)
