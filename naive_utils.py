@@ -116,22 +116,23 @@ def get_acc(y_pred, Y):
     acc = 1-(nonzeros/scores_sum.shape[0])
 
     return acc.detach().item()
-    
-def train_step(net, optimizer, lamb, X, Y, mode):
-    if mode == 'train':
-      net.train()
 
-      loss, acc = loss_fn(net, X, Y, lamb)
-      loss.backward()
-      optimizer.step()
-      optimizer.zero_grad()
+def make_train_step(net, loss_fn, optimizer, lamb):
+    def train_step(X, Y, mode):
+        if mode == 'train':
+          net.train()
 
-    if mode == 'eval':
-      net.eval()
-      loss, acc = loss_fn(net, X, Y, lamb)
-    
-    return loss.detach().item(), acc
+          loss, acc = loss_fn(net, X, Y, lamb)
+          loss.backward()
+          optimizer.step()
+          optimizer.zero_grad()
 
+        if mode == 'eval':
+          net.eval()
+          loss, acc = loss_fn(net, X, Y, lamb)
+        
+        return loss.detach().item(), acc
+    return train_step
 
 def output(epoch, batch_index, num_batches, batch_loss, batch_acc, train_loss, train_acc, test_loss, test_acc, polar):
     str = 'epoch: {}, {}/{}, | BATCH loss: {:.3f}, acc {:.3f} | TRAIN loss: {:.3f}, acc {:.3f} | TEST loss: {:.3f}, acc {:.3f} | polar: {:.3f}'
