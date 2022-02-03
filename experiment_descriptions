@@ -10,3 +10,23 @@ baseline_results0.pk
 
 baseline_results1.pk
 - same as baseline_results0.pk, except lambda value is now 1e-3
+
+polar_20_data_ADAM.pk
+- polar updates. 
+- 3 hidden layers
+- scattering dimension 3096
+- MNIST. Train size 2k, test size 2k, batch size 32 
+- ADAM optimizer
+- lambda value 1e-3
+- started at 20 neuron width in hidden layer, trained until 100. 
+- 200 epochs
+
+polar_20_data_ADAM.pk
+- polar updates. 
+- 3 hidden layers
+- scattering dimension 3096
+- MNIST. Train size 2k, test size 2k, batch size 32 
+- SGD optimizer, implemented lr search every 40 epochs, 200 epochs per neuron 
+- lambda value 1e-3
+- started at 20 neuron width in hidden layer, trained until 100. 
+
