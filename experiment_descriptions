@@ -21,7 +21,7 @@ polar_20_data_ADAM.pk
 - started at 20 neuron width in hidden layer, trained until 100. 
 - 200 epochs
 
-polar_20_data_ADAM.pk
+polar_20_data_SGD.pk
 - polar updates. 
 - 3 hidden layers
 - scattering dimension 3096
